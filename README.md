@@ -1,3 +1,3 @@
 # wavelets
 
-Notebook to explore radio interferometric HERA data through wavelet transforms.
+Notebooks to explore radio interferometric HERA data through wavelet transforms.
