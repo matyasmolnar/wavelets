@@ -308,3 +308,94 @@ def cws(time, signal=None, scales=None, wavelet=None, periods=None, spectrum='am
             colorbar.set_label(cbarlabel)
 
     return ax, qmesh, values
+
+
+def scaleogram_tf(time, signal, wavelet='cmor1.5-1.0', scales=None, freq_plot='ps',
+                 coi=True, scg_title='', scg_xlabel='Time [s]', scg_ylabel='Frequency [Hz]',
+                 t_label='', f_label='', savefig=None, figsize=(8, 8), dpi=125):
+    """Scaleogram with time and frequency domains also plotted on sides
+    """
+    fig = plt.figure(figsize=figsize, constrained_layout=True, dpi=dpi)
+
+    gs = fig.add_gridspec(3, 2, height_ratios=[1, 2.5, 0.1], width_ratios=[2.5, 1])
+
+    # 1) Scaleogram
+    ax1 = plt.subplot(gs[1, 0])
+    ax1, qmesh, values = cws(time, signal, wavelet=wavelet, scales=scales, \
+        cscale='log', coi=coi, title=scg_title, ax=ax1, spectrum='power', yaxis='frequency', \
+        cbar=False, xlabel=scg_xlabel, ylabel=scg_ylabel, yscale='log', \
+        cbarkw={'aspect':40, 'pad':0.12, 'fraction':0.05}, coikw={'alpha':0.5, 'hatch':'/'})
+
+    cax1 = plt.subplot(gs[2, 0])
+    plt.colorbar(qmesh, cax=cax1, orientation='horizontal', label='$|\mathrm{CWT}|^2$')
+
+
+    # 2) Visibility Signal
+    ax0 = plt.subplot(gs[0, 0])
+    if np.iscomplexobj(signal):
+        ax0.plot(time, signal.real, label=r'$\mathfrak{Re}$')
+        ax0.plot(time, signal.imag, label=r'$\mathfrak{Im}$')
+        ax0.legend(loc='best')
+    else:
+        ax0.plot(time, signal)
+    ax0.set_ylabel(t_label)
+    ax0.set_xlim(*ax1.get_xlim())
+    ax0.tick_params(labelbottom=False)
+
+
+    # 3) PS or FT
+    sampling = np.median(np.ediff1d(time))
+    if freq_plot.lower() == 'ps':
+        # 3a) PS
+        delay, pspec = scipy.signal.periodogram(signal, fs=1/sampling, window='blackmanharris',
+            scaling='spectrum', nfft=signal.size, detrend=False, return_onesided=False)
+        delay_sort = np.argsort(delay)
+        delay = delay[delay_sort]
+        pspec = pspec[delay_sort]
+        pspec[np.abs(delay) < ax1.get_ylim()[0] - np.ediff1d(delay).mean()] *= np.nan
+
+        ax2 = plt.subplot(gs[1, 1])
+        z_idx = np.where(delay == 0)[0][0]
+        ax2.plot(pspec[z_idx:], delay[z_idx:], label=r'$+$', c='deeppink', alpha=0.8)
+        ax2.plot(pspec[:z_idx+1], -delay[:z_idx+1], label=r'$-$', c='purple', alpha=0.8)
+        ax2.set_ylim(*ax1.get_ylim())
+        ax2.set_xscale('log')
+        ax2.set_yscale('log')
+
+        ax2.legend(loc='best')
+        # ax2.set_title('Power Spectrum')
+        ax2.set_xlabel(f_label)
+        ax2.tick_params(labelleft=False)
+
+    elif freq_plot.lower() == 'ft':
+        # 3b) FT
+        vft = scipy.fft.fft(signal*scipy.signal.blackmanharris(signal.size))
+        dly = scipy.fft.fftfreq(signal.size, sampling)
+
+        dly_sort = np.argsort(dly)
+        dly = dly[dly_sort]
+        vft = vft[dly_sort]
+        vft[np.abs(dly) < ax1.get_ylim()[0] - np.ediff1d(dly).mean()] *= np.nan
+
+        ax2 = plt.subplot(gs[1, 1])
+        z_idx = np.where(dly == 0)[0][0]
+        ax2.plot(np.abs(vft[z_idx:]), dly[z_idx:], label=r'$+$', c='deeppink', alpha=0.8)
+        ax2.plot(np.abs(vft[:z_idx+1]), -dly[:z_idx+1], label=r'$-$', c='purple', alpha=0.8)
+        ax2.set_ylim(*ax1.get_ylim())
+        ax2.set_xscale('log')
+        ax2.set_yscale('log')
+        # ax2.set_xlim((0.15, 150))
+        ax2.set_xlim((0.5, 50))
+
+        ax2.legend(loc='upper right')
+        # ax2.set_title('Power Spectrum')
+        ax2.set_xlabel(f_label)
+        ax2.tick_params(labelleft=False)
+
+    else:
+        raise ValueError('Specify either "ps" or "ft" for frequency plot.')
+
+    if savefig is not None:
+        plt.savefig(savefig, bbox_inches='tight')
+
+    return fig, (ax0, ax1, ax2)
