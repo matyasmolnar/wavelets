@@ -1,6 +1,9 @@
-*.npz
-scaleogram
 .ipynb_checkpoints
-__pycache__
+__pycache__/
+*.egg-info
 *test*
+*.npz
 figures/
+scaleogram/
+data/cwt_power_*.npz
+data/h1c_idr2.OCRSLP2XTK.npz
