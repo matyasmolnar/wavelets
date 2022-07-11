@@ -167,23 +167,26 @@ def cws(time, signal=None, scales=None, wavelet=None, periods=None, spectrum='am
 
     # adjust y axis ticks
     scales_period = 1./scales_freq  # needed also for COI mask
-    xmesh = np.concatenate([time, [time[-1]+dt]])
+    xmesh = time #np.concatenate([time, [time[-1]+dt]])
     if yaxis == 'period':
-        ymesh = np.concatenate([scales_period, [scales_period[-1]+dt]])
-        ylim  = ymesh[[-1,0]] if ylim is None else ylim
+        # ymesh = np.concatenate([scales_period, [scales_period[-1]+dt]])
+        ymesh = scales_period
+        ylim  = ymesh[[-1, 0]] if ylim is None else ylim
         ax.set_ylabel('Period' if ylabel is None else ylabel)
     elif yaxis == 'frequency':
-        df    = scales_freq[-1]/scales_freq[-2]
-        ymesh = np.concatenate([scales_freq, [scales_freq[-1]*df]])
+        # df    = scales_freq[-1]/scales_freq[-2]
+        # ymesh = np.concatenate([scales_freq, [scales_freq[-1]*df]])
+        ymesh = scales_freq
         # set a useful yscale default: the scale freqs appears evenly in logscale
         yscale = 'log' if yscale is None else yscale
         ylim   = ymesh[[-1, 0]] if ylim is None else ylim
         ax.set_ylabel('Frequency' if ylabel is None else ylabel)
         #ax.invert_yaxis()
     elif yaxis == 'scale':
-        ds = scales[-1]-scales[-2]
-        ymesh = np.concatenate([scales, [scales[-1] + ds]])
-        ylim  = ymesh[[-1,0]] if ylim is None else ylim
+        ymesh = scales
+        # ds = scales[-1]-scales[-2]
+        # ymesh = np.concatenate([scales, [scales[-1] + ds]])
+        ylim  = ymesh[[-1, 0]] if ylim is None else ylim
         ax.set_ylabel('Scale' if ylabel is None else ylabel)
     else:
         raise ValueError("yaxis must be one of 'scale', 'frequency' or 'period', found "
